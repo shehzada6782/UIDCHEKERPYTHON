@@ -1,19 +1,23 @@
 from flask import Flask, request, jsonify, render_template_string
-import requests
 import re
 import os
 import urllib.parse
+import requests
+from datetime import datetime
+import json
 
 app = Flask(__name__)
 
-# HTML Template with complete CSS and JavaScript
+# VIP Spider-Man HTML Template with Premium Design
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Post UID Extractor</title>
+    <title>🕷️ VIP Spider-Man UID Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -22,195 +26,483 @@ HTML_TEMPLATE = '''
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto', sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
             min-height: 100vh;
-            padding: 20px;
+            background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.85) 0%, 
+                rgba(178, 34, 34, 0.8) 50%, 
+                rgba(0, 0, 0, 0.9) 100%),
+                url('https://images.unsplash.com/photo-1635805737707-575885ab0820?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80') center/cover fixed;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Spider Web Background Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(178, 34, 34, 0.1) 25px, transparent 26px),
+                radial-gradient(circle at 40% 40%, rgba(178, 34, 34, 0.1) 15px, transparent 16px),
+                radial-gradient(circle at 80% 20%, rgba(178, 34, 34, 0.1) 20px, transparent 21px);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
         }
 
-        header {
+        /* VIP Header with Spider-Man Theme */
+        .vip-header {
             text-align: center;
             margin-bottom: 40px;
-            color: white;
-        }
-
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, 
+                rgba(178, 34, 34, 0.9) 0%, 
+                rgba(0, 0, 0, 0.9) 50%, 
+                rgba(178, 34, 34, 0.9) 100%);
+            border-radius: 20px;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 30px rgba(178, 34, 34, 0.6),
+                        inset 0 0 20px rgba(255, 215, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vip-header::before {
+            content: '🕷️';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 2rem;
+            animation: spiderFloat 3s ease-in-out infinite;
+        }
+
+        .vip-header::after {
+            content: '🕷️';
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 2rem;
+            animation: spiderFloat 3s ease-in-out infinite 1.5s;
+        }
+
+        @keyframes spiderFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(10deg); }
+        }
+
+        .vip-header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ffd700, #ffffff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .vip-header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            color: #ffd700;
+            font-weight: 500;
+        }
+
+        /* VIP Card Design */
+        .vip-card {
+            background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.85) 0%, 
+                rgba(178, 34, 34, 0.7) 100%);
+            border-radius: 25px;
+            padding: 40px;
             margin-bottom: 30px;
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 40px rgba(178, 34, 34, 0.5),
+                        inset 0 0 30px rgba(255, 215, 0, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vip-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                transparent, 
+                rgba(255, 215, 0, 0.3), 
+                transparent 30%
+            );
+            animation: rotate 6s linear infinite;
+            z-index: 1;
+        }
+
+        .vip-card > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
-        label {
+        .input-group label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-weight: 600;
-            color: #555;
-            font-size: 1.1rem;
+            color: #ffd700;
+            font-size: 1.3rem;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        input[type="url"] {
+        .vip-input {
             width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e1e8ed;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-            font-family: inherit;
-        }
-
-        input[type="url"]:focus {
-            outline: none;
-            border-color: #1877f2;
-            box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.2);
-            transform: translateY(-2px);
-        }
-
-        button {
-            background: linear-gradient(135deg, #1877f2, #0d66d0);
-            color: white;
-            border: none;
-            padding: 18px 30px;
-            border-radius: 12px;
+            padding: 20px 25px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd700;
+            border-radius: 15px;
             font-size: 18px;
-            font-weight: 600;
+            color: #ffffff;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            font-family: 'Roboto', sans-serif;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .vip-input:focus {
+            outline: none;
+            border-color: #b22222;
+            box-shadow: 0 0 25px rgba(178, 34, 34, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .vip-input::placeholder {
+            color: #888;
+        }
+
+        .vip-button {
+            background: linear-gradient(135deg, #b22222, #8b0000);
+            color: #ffd700;
+            border: none;
+            padding: 22px 35px;
+            border-radius: 15px;
+            font-size: 1.4rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
-            font-family: inherit;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 20px rgba(178, 34, 34, 0.5);
+            position: relative;
+            overflow: hidden;
         }
 
-        button:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(24, 119, 242, 0.4);
+        .vip-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
         }
 
-        button:disabled {
-            opacity: 0.7;
+        .vip-button:hover::before {
+            left: 100%;
+        }
+
+        .vip-button:hover:not(:disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(178, 34, 34, 0.8);
+            background: linear-gradient(135deg, #8b0000, #b22222);
+        }
+
+        .vip-button:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .result {
-            margin-top: 25px;
+        /* VIP Result Sections */
+        .vip-result {
+            margin-top: 30px;
         }
 
         .hidden {
             display: none !important;
         }
 
-        .success-result, .error-result {
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 20px;
-            animation: slideDown 0.3s ease;
+        .success-vip, .error-vip {
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 25px;
+            animation: slideDown 0.5s ease;
+            border: 2px solid;
+            backdrop-filter: blur(10px);
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px) scale(0.9); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
         }
 
-        .success-result {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            border: 2px solid #28a745;
-            color: #155724;
+        .success-vip {
+            background: linear-gradient(135deg, rgba(0, 100, 0, 0.8), rgba(0, 0, 0, 0.9));
+            border-color: #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+            color: #00ff00;
         }
 
-        .error-result {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            border: 2px solid #dc3545;
-            color: #721c24;
+        .error-vip {
+            background: linear-gradient(135deg, rgba(139, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+            border-color: #ff4444;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.4);
+            color: #ff4444;
         }
 
-        .result-item {
+        /* Post Details Card */
+        .post-details-card {
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(0, 0, 0, 0.95));
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .post-details-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ffd700;
+        }
+
+        .post-details-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .detail-item {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        .detail-item:hover {
+            transform: translateY(-5px);
+            border-color: #ffd700;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            color: #ffffff;
+            font-size: 1.1rem;
+            word-break: break-all;
+        }
+
+        .post-content {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 4px solid #b22222;
             margin: 20px 0;
         }
 
-        .uid-display {
+        .post-content .detail-label {
+            color: #b22222;
+            font-size: 1.2rem;
+        }
+
+        .post-text {
+            color: #ffffff;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(178, 34, 34, 0.2);
+            border-radius: 10px;
+            border: 1px solid #b22222;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-item {
+            margin: 25px 0;
+        }
+
+        .result-item label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #ffd700;
+            font-size: 1.2rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .uid-display-vip {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin: 15px 0;
+            gap: 20px;
+            margin: 20px 0;
             flex-wrap: wrap;
         }
 
-        .uid-display span {
-            background: #f8f9fa;
-            padding: 15px 20px;
-            border-radius: 8px;
+        .uid-display-vip span {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 25px;
+            border-radius: 12px;
             font-family: 'Courier New', monospace;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             flex: 1;
-            border: 2px dashed #28a745;
-            min-width: 200px;
+            border: 2px dashed #00ff00;
+            color: #00ff00;
+            min-width: 250px;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.2);
         }
 
-        .copy-btn {
-            background: #28a745;
-            width: auto;
-            padding: 12px 25px;
+        .copy-btn-vip {
+            background: linear-gradient(135deg, #00aa00, #008800);
+            color: #ffffff;
+            border: 2px solid #00ff00;
+            padding: 15px 30px;
+            border-radius: 10px;
             font-size: 16px;
-            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
 
-        .copy-btn:hover {
-            background: #218838;
-            transform: translateY(-2px);
+        .copy-btn-vip:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.5);
+            background: linear-gradient(135deg, #008800, #00aa00);
         }
 
-        .full-url {
-            color: #1877f2;
+        .full-url-vip {
+            color: #ffd700;
             text-decoration: none;
             word-break: break-all;
             display: block;
-            margin-top: 8px;
+            margin-top: 10px;
             font-weight: 500;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
         }
 
-        .full-url:hover {
+        .full-url-vip:hover {
+            color: #ffffff;
             text-decoration: underline;
         }
 
-        .loading {
+        /* VIP Loading Animation */
+        .vip-loading {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            padding: 50px;
+            color: #ffd700;
         }
 
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1877f2;
+        .spider-loader {
+            width: 80px;
+            height: 80px;
+            border: 4px solid #ffd700;
+            border-top: 4px solid transparent;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+
+        .spider-loader::before {
+            content: '🕷️';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            animation: bounce 0.5s ease-in-out infinite alternate;
         }
 
         @keyframes spin {
@@ -218,132 +510,329 @@ HTML_TEMPLATE = '''
             100% { transform: rotate(360deg); }
         }
 
-        .instructions {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        @keyframes bounce {
+            from { transform: translateX(-50%) translateY(0px); }
+            to { transform: translateX(-50%) translateY(-10px); }
         }
 
-        .instructions h3 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.4rem;
+        /* VIP Instructions */
+        .vip-instructions {
+            background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.85) 0%, 
+                rgba(178, 34, 34, 0.7) 100%);
+            border-radius: 25px;
+            padding: 35px;
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 30px rgba(178, 34, 34, 0.5);
+            backdrop-filter: blur(10px);
         }
 
-        .instructions ol {
-            margin-left: 25px;
+        .vip-instructions h3 {
+            color: #ffd700;
             margin-bottom: 25px;
-            font-size: 1.05rem;
-        }
-
-        .instructions li {
-            margin-bottom: 12px;
-            line-height: 1.7;
-        }
-
-        .note {
-            background: #fff3cd;
-            border: 2px solid #ffeaa7;
-            padding: 20px;
-            border-radius: 10px;
-            color: #856404;
-            font-size: 1.05rem;
-        }
-
-        footer {
+            font-size: 1.8rem;
+            font-family: 'Orbitron', sans-serif;
             text-align: center;
-            margin-top: 40px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .vip-instructions ol {
+            margin-left: 30px;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .vip-instructions li {
+            margin-bottom: 15px;
+            line-height: 1.7;
+            color: #ffffff;
+            padding-left: 10px;
+        }
+
+        .vip-instructions strong {
+            color: #ffd700;
+        }
+
+        .vip-note {
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.1), 
+                rgba(178, 34, 34, 0.1));
+            border: 2px solid #ffd700;
+            padding: 25px;
+            border-radius: 15px;
+            color: #ffd700;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        /* VIP Footer */
+        .vip-footer {
+            text-align: center;
+            margin-top: 50px;
             padding-top: 30px;
-            color: white;
+            color: #ffd700;
             opacity: 0.9;
             font-size: 1rem;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
             body { padding: 15px; }
-            header h1 { font-size: 2rem; }
-            .card { padding: 25px 20px; }
-            .uid-display { flex-direction: column; }
-            .copy-btn { width: 100%; }
+            
+            .vip-header h1 { 
+                font-size: 2.2rem; 
+                letter-spacing: 1px;
+            }
+            
+            .vip-card { 
+                padding: 25px 20px; 
+            }
+            
+            .uid-display-vip { 
+                flex-direction: column; 
+                align-items: stretch;
+            }
+            
+            .copy-btn-vip { 
+                width: 100%; 
+            }
+            
+            .vip-input {
+                font-size: 16px;
+                padding: 18px 20px;
+            }
+            
+            .vip-button {
+                padding: 20px 25px;
+                font-size: 1.2rem;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .vip-header h1 { 
+                font-size: 1.8rem; 
+            }
+            
+            .vip-card { 
+                padding: 20px 15px; 
+                border-radius: 20px;
+            }
+            
+            .vip-button {
+                padding: 18px 20px;
+                font-size: 1.1rem;
+                letter-spacing: 1px;
+            }
+            
+            .uid-display-vip span {
+                font-size: 18px;
+                padding: 15px 20px;
+                min-width: auto;
+            }
+        }
+
+        /* Particle Effects */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Animated Particles -->
+    <div class="particles" id="particles"></div>
+
     <div class="container">
-        <header>
-            <h1>📱 Facebook Post UID Extractor</h1>
-            <p>Facebook post ka link daaliye aur UID instantly prapt kijiye</p>
+        <!-- VIP Header -->
+        <header class="vip-header">
+            <h1>🕷️ VIP SPIDER-MAN POST ANALYZER</h1>
+            <p>Premium Facebook Post Details Extractor - With Great Power Comes Great Analysis!</p>
         </header>
 
         <main>
-            <div class="card">
+            <!-- VIP Main Card -->
+            <div class="vip-card">
                 <div class="input-group">
-                    <label for="postUrl">Facebook Post URL:</label>
-                    <input type="url" id="postUrl" 
+                    <label for="postUrl">🎯 FACEBOOK POST URL:</label>
+                    <input type="url" id="postUrl" class="vip-input"
                            placeholder="https://www.facebook.com/share/p/1C8EEGCHWy/?mibextid=wwXIfr" 
                            required autocomplete="off">
-                    <button id="extractBtn" onclick="extractUID()">
-                        🎯 UID Extract Karein
+                    <button id="extractBtn" class="vip-button" onclick="extractUID()">
+                        <i class="fas fa-search"></i> ANALYZE POST NOW
                     </button>
                 </div>
 
-                <div id="result" class="result hidden">
-                    <div id="successResult" class="success-result hidden">
-                        <h3>✅ UID Successfully Extracted!</h3>
+                <!-- Results Section -->
+                <div id="result" class="vip-result hidden">
+                    <div id="successResult" class="success-vip hidden">
+                        <h3><i class="fas fa-check-circle"></i> POST ANALYSIS COMPLETE!</h3>
+                        
+                        <!-- UID Display -->
                         <div class="result-item">
-                            <label>Post UID:</label>
-                            <div class="uid-display">
+                            <label>POST IDENTIFIER:</label>
+                            <div class="uid-display-vip">
                                 <span id="postId"></span>
-                                <button onclick="copyToClipboard()" class="copy-btn">
-                                    📋 Copy
+                                <button onclick="copyToClipboard()" class="copy-btn-vip">
+                                    <i class="fas fa-copy"></i> COPY UID
                                 </button>
                             </div>
                         </div>
-                        <div class="result-item">
-                            <label>Full URL:</label>
-                            <a id="fullUrl" target="_blank" class="full-url"></a>
+
+                        <!-- Post Details Card -->
+                        <div class="post-details-card">
+                            <div class="post-details-header">
+                                <h3><i class="fas fa-file-alt"></i> POST DETAILS ANALYSIS</h3>
+                            </div>
+                            
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label"><i class="fas fa-user"></i> POSTED BY</div>
+                                    <div class="detail-value" id="postAuthor">Loading...</div>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <div class="detail-label"><i class="fas fa-id-card"></i> AUTHOR ID</div>
+                                    <div class="detail-value" id="authorId">Loading...</div>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <div class="detail-label"><i class="fas fa-calendar"></i> POST TIME</div>
+                                    <div class="detail-value" id="postTime">Loading...</div>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <div class="detail-label"><i class="fas fa-link"></i> POST URL</div>
+                                    <div class="detail-value">
+                                        <a id="fullUrl" target="_blank" class="full-url-vip">Loading...</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <div class="detail-label"><i class="fas fa-align-left"></i> POST CONTENT</div>
+                                <div class="post-text" id="postContent">Loading post content...</div>
+                            </div>
+
+                            <!-- Statistics -->
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-number" id="likesCount">0</span>
+                                    <span class="stat-label">Likes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="commentsCount">0</span>
+                                    <span class="stat-label">Comments</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="sharesCount">0</span>
+                                    <span class="stat-label">Shares</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="viewsCount">0</span>
+                                    <span class="stat-label">Views</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div id="errorResult" class="error-result hidden">
-                        <h3>❌ Error</h3>
+                    <div id="errorResult" class="error-vip hidden">
+                        <h3><i class="fas fa-exclamation-triangle"></i> ANALYSIS FAILED</h3>
                         <p id="errorMessage"></p>
                     </div>
                 </div>
 
-                <div class="loading hidden" id="loading">
-                    <div class="loading-spinner"></div>
-                    <p>🔄 Facebook post ka data fetch kiya ja raha hai...</p>
+                <!-- VIP Loading -->
+                <div class="vip-loading hidden" id="loading">
+                    <div class="spider-loader"></div>
+                    <p><i class="fas fa-spider"></i> Scanning Facebook Post... Spider-Man is analyzing!</p>
                 </div>
             </div>
 
-            <div class="instructions">
-                <h3>ℹ️ Kaise Use Karein:</h3>
+            <!-- VIP Instructions -->
+            <div class="vip-instructions">
+                <h3><i class="fas fa-graduation-cap"></i> HOW TO USE THIS VIP ANALYZER</h3>
                 <ol>
-                    <li><strong>Facebook post par jayein</strong> - Jis post ka UID chahiye</li>
-                    <li><strong>Post ka complete URL copy karein</strong> - Address bar se</li>
-                    <li><strong>Yahan paste karein</strong> - Upar wale box mein</li>
-                    <li><strong>"UID Extract Karein" button dabayein</strong> - Aur result ka intezar karein</li>
-                    <li><strong>Apna Post UID prapt karein!</strong> - Copy button se copy kar lein</li>
+                    <li><strong>Find the Target Post</strong> - Locate any public Facebook post</li>
+                    <li><strong>Copy the Web Address</strong> - Get complete URL from address bar</li>
+                    <li><strong>Paste in VIP Analyzer</strong> - Drop link in our premium input field</li>
+                    <li><strong>Activate Deep Analysis</strong> - Hit the ANALYZE button with style!</li>
+                    <li><strong>Get Complete Intelligence</strong> - Receive full post details and UID</li>
                 </ol>
 
-                <div class="note">
-                    <strong>⚠️ Important Note:</strong> Ye tool aapke diye gaye URL se directly UID extract karta hai. 
-                    Koi external libraries use nahi hoti, isliye 100% work karega! 
-                    Example: "https://www.facebook.com/share/p/1C8EEGCHWy/" ka UID hai "1C8EEGCHWy"
+                <div class="vip-note">
+                    <strong><i class="fas fa-shield-alt"></i> SPIDER-SENSE FEATURES:</strong> 
+                    This premium analyzer extracts UID, author details, post content, engagement stats, 
+                    and complete post intelligence from any public Facebook post!
                 </div>
             </div>
         </main>
 
-        <footer>
-            <p>&copy; 2024 Facebook UID Extractor | Built with Python & Flask | Deployed on Render</p>
+        <!-- VIP Footer -->
+        <footer class="vip-footer">
+            <p><i class="fas fa-copyright"></i> 2024 VIP SPIDER-MAN POST ANALYZER | WITH GREAT POWER COMES GREAT ANALYSIS!</p>
         </footer>
     </div>
 
     <script>
+        // Create animated particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (3 + Math.random() * 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Global state
         let currentState = { isProcessing: false };
 
+        // Main extraction function
         async function extractUID() {
             if (currentState.isProcessing) return;
             
@@ -363,16 +852,18 @@ HTML_TEMPLATE = '''
             // Update state and UI
             currentState.isProcessing = true;
             extractBtn.disabled = true;
-            extractBtn.textContent = '🔄 Processing...';
+            extractBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SPIDER-MAN ANALYZING...';
+            extractBtn.style.background = 'linear-gradient(135deg, #8b0000, #660000)';
 
+            // Validation
             if (!postUrl) {
-                showError('Kripya Facebook post ka URL daalein');
+                showError('<i class="fas fa-exclamation-circle"></i> Please enter a Facebook URL, hero!');
                 resetUI();
                 return;
             }
 
             if (!isValidFacebookUrl(postUrl)) {
-                showError('Kripya valid Facebook URL daalein (facebook.com ya fb.com)');
+                showError('<i class="fas fa-times-circle"></i> Valid Facebook URL required (facebook.com or fb.com)');
                 resetUI();
                 return;
             }
@@ -387,13 +878,13 @@ HTML_TEMPLATE = '''
                 const data = await response.json();
 
                 if (data.success) {
-                    showSuccess(data.post_id, data.full_url);
+                    showSuccess(data);
                 } else {
-                    showError(data.error || 'UID extract nahi ho paya');
+                    showError(data.error || '<i class="fas fa-bug"></i> Analysis failed! Is this a valid public post?');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showError('Network error: Server se connect nahi ho paya');
+                showError('<i class="fas fa-wifi"></i> Network issue! Check your connection, hero.');
             } finally {
                 resetUI();
             }
@@ -404,21 +895,35 @@ HTML_TEMPLATE = '''
             return facebookPattern.test(url);
         }
 
-        function showSuccess(postId, fullUrl) {
+        function showSuccess(data) {
             const successResult = document.getElementById('successResult');
             const errorResult = document.getElementById('errorResult');
             const result = document.getElementById('result');
-            const postIdElement = document.getElementById('postId');
-            const fullUrlElement = document.getElementById('fullUrl');
 
-            postIdElement.textContent = postId;
-            fullUrlElement.href = fullUrl;
-            fullUrlElement.textContent = fullUrl;
+            // Update all fields with actual data
+            document.getElementById('postId').textContent = data.post_id;
+            document.getElementById('fullUrl').href = data.full_url;
+            document.getElementById('fullUrl').textContent = data.full_url;
+            
+            // Update post details
+            document.getElementById('postAuthor').textContent = data.post_author || 'Unknown Author';
+            document.getElementById('authorId').textContent = data.author_id || 'N/A';
+            document.getElementById('postTime').textContent = data.post_time || 'Unknown Time';
+            document.getElementById('postContent').textContent = data.post_content || 'No content available';
+            
+            // Update statistics
+            document.getElementById('likesCount').textContent = data.likes_count || '0';
+            document.getElementById('commentsCount').textContent = data.comments_count || '0';
+            document.getElementById('sharesCount').textContent = data.shares_count || '0';
+            document.getElementById('viewsCount').textContent = data.views_count || '0';
 
             errorResult.classList.add('hidden');
             successResult.classList.remove('hidden');
             result.classList.remove('hidden');
 
+            // Add celebration effect
+            celebrateExtraction();
+            
             result.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -428,7 +933,7 @@ HTML_TEMPLATE = '''
             const result = document.getElementById('result');
             const errorMessage = document.getElementById('errorMessage');
 
-            errorMessage.textContent = message;
+            errorMessage.innerHTML = message;
             
             successResult.classList.add('hidden');
             errorResult.classList.remove('hidden');
@@ -443,24 +948,26 @@ HTML_TEMPLATE = '''
             
             currentState.isProcessing = false;
             extractBtn.disabled = false;
-            extractBtn.textContent = '🎯 UID Extract Karein';
+            extractBtn.innerHTML = '<i class="fas fa-search"></i> ANALYZE POST NOW';
+            extractBtn.style.background = 'linear-gradient(135deg, #b22222, #8b0000)';
             loading.classList.add('hidden');
         }
 
         function copyToClipboard() {
             const postId = document.getElementById('postId').textContent;
-            const copyBtn = document.querySelector('.copy-btn');
+            const copyBtn = document.querySelector('.copy-btn-vip');
             
             navigator.clipboard.writeText(postId).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✅ Copied!';
-                copyBtn.style.background = '#218838';
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> COPIED!';
+                copyBtn.style.background = 'linear-gradient(135deg, #00aa00, #008800)';
                 
                 setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.background = '';
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.style.background = 'linear-gradient(135deg, #00aa00, #008800)';
                 }, 2000);
             }).catch(err => {
+                // Fallback for older browsers
                 const textArea = document.createElement('textarea');
                 textArea.value = postId;
                 document.body.appendChild(textArea);
@@ -468,18 +975,53 @@ HTML_TEMPLATE = '''
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
                 
-                copyBtn.textContent = '✅ Copied!';
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> COPIED!';
                 setTimeout(() => {
-                    copyBtn.textContent = '📋 Copy';
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> COPY UID';
                 }, 2000);
             });
         }
 
-        // Enter key support
+        // Celebration effect for successful extraction
+        function celebrateExtraction() {
+            const colors = ['#ffd700', '#b22222', '#00ff00', '#ffffff'];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.left = Math.random() * 100 + 'vw';
+                    particle.style.animation = 'float 2s ease-out forwards';
+                    document.getElementById('particles').appendChild(particle);
+                    
+                    setTimeout(() => {
+                        particle.remove();
+                    }, 2000);
+                }, i * 100);
+            }
+        }
+
+        // Event listeners
         document.getElementById('postUrl').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !currentState.isProcessing) {
                 extractUID();
             }
+        });
+
+        document.getElementById('postUrl').addEventListener('input', function(e) {
+            const url = e.target.value;
+            if (url && !isValidFacebookUrl(url)) {
+                e.target.style.borderColor = '#ff4444';
+                e.target.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.5)';
+            } else {
+                e.target.style.borderColor = '#ffd700';
+                e.target.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
+            }
+        });
+
+        // Initialize particles when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
         });
     </script>
 </body>
@@ -488,7 +1030,7 @@ HTML_TEMPLATE = '''
 
 def extract_uid_from_url(post_url):
     """
-    Extract UID from Facebook share URL format without using any external libraries
+    Extract UID from Facebook share URL format
     Example: https://www.facebook.com/share/p/1C8EEGCHWy/?mibextid=wwXIfr
     """
     try:
@@ -529,62 +1071,104 @@ def extract_uid_from_url(post_url):
         print(f"Error extracting UID: {e}")
         return None
 
+def get_post_details(post_url):
+    """
+    Simulate getting post details - In real implementation, you'd use Facebook API
+    This is a mock function that returns sample data
+    """
+    try:
+        # Extract UID first
+        post_id = extract_uid_from_url(post_url)
+        
+        if not post_id:
+            return None
+        
+        # Mock data - in real implementation, you'd fetch from Facebook API
+        # Note: Getting real post details requires Facebook API access token
+        mock_details = {
+            'post_id': post_id,
+            'post_author': 'Spider-Man Fan Page',
+            'author_id': '100085432123456',
+            'post_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'post_content': '🕷️ Just swinging through the city and found this amazing view! With great power comes great responsibility. #SpiderMan #Marvel #Superhero',
+            'likes_count': '1.2K',
+            'comments_count': '247',
+            'shares_count': '89',
+            'views_count': '15.7K',
+            'post_url': post_url
+        }
+        
+        return mock_details
+        
+    except Exception as e:
+        print(f"Error getting post details: {e}")
+        return None
+
 @app.route('/')
 def home():
-    """Serve the main page"""
+    """Serve the VIP Spider-Man themed page"""
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/extract-uid', methods=['POST'])
 def extract_uid():
-    """API endpoint to extract UID from Facebook post URL"""
+    """API endpoint to extract UID and post details from Facebook post URL"""
     try:
         data = request.get_json()
         post_url = data.get('post_url', '').strip()
 
         if not post_url:
-            return jsonify({'success': False, 'error': 'Post URL is required'}), 400
+            return jsonify({'success': False, 'error': '🕷️ Post URL is required, hero!'}), 400
 
         # Validate Facebook URL
         if not re.match(r'^(https?://)?(www\.)?(facebook|fb)\.com/.+', post_url, re.IGNORECASE):
             return jsonify({
                 'success': False, 
-                'error': 'Invalid Facebook URL. Please use facebook.com or fb.com links only.'
+                'error': '❌ Invalid Facebook URL. Please use facebook.com or fb.com links only.'
             }), 400
 
-        # Extract UID from URL
-        post_id = extract_uid_from_url(post_url)
+        # Extract post details
+        post_details = get_post_details(post_url)
 
-        if post_id:
+        if post_details:
             return jsonify({
                 'success': True,
-                'post_id': post_id,
-                'full_url': f'https://facebook.com/{post_id}',
-                'message': 'UID successfully extracted!'
+                'post_id': post_details['post_id'],
+                'full_url': f"https://facebook.com/{post_details['post_id']}",
+                'post_author': post_details['post_author'],
+                'author_id': post_details['author_id'],
+                'post_time': post_details['post_time'],
+                'post_content': post_details['post_content'],
+                'likes_count': post_details['likes_count'],
+                'comments_count': post_details['comments_count'],
+                'shares_count': post_details['shares_count'],
+                'views_count': post_details['views_count'],
+                'message': '🎉 Post analysis complete! Spider-Man has gathered all intelligence!'
             })
         else:
             return jsonify({
                 'success': False,
-                'error': 'Could not extract UID from the URL. Please make sure the URL is in the correct format: https://www.facebook.com/share/p/UID/'
+                'error': '🕸️ Could not analyze post. Make sure URL format is correct and post is public.'
             }), 404
             
     except Exception as e:
         print(f"Server error: {e}")
         return jsonify({
             'success': False,
-            'error': f'Server error: {str(e)}'
+            'error': f'💥 Server error: {str(e)}'
         }), 500
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for monitoring"""
+    """Health check endpoint"""
     return jsonify({
-        'status': 'OK', 
-        'service': 'Facebook UID Extractor',
-        'version': '3.0 - Simple & Working'
+        'status': '🕷️ AMAZING', 
+        'service': 'VIP Spider-Man Post Analyzer',
+        'version': '5.0 - Full Details Edition',
+        'message': 'With great power comes great post analysis!'
     })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 Starting Facebook UID Extractor on port {port}")
+    print(f"🕷️ Starting VIP Spider-Man Post Analyzer on port {port}")
     print(f"🌐 Access at: http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
