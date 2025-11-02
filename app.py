@@ -2,21 +2,18 @@ from flask import Flask, request, jsonify, render_template_string
 import re
 import os
 import urllib.parse
-import requests
-from datetime import datetime
-import json
-import time
 
 app = Flask(__name__)
 
-# Simple and Clean HTML Template
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Post Analyzer</title>
+    <title>Facebook UID Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -25,126 +22,216 @@ HTML_TEMPLATE = '''
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            color: #333;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .header {
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             text-align: center;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        .header h1 {
-            color: #1877f2;
-            font-size: 2.5rem;
+        .logo {
+            font-size: 3rem;
+            color: #fff;
             margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
-        .header p {
-            color: #666;
-            font-size: 1.2rem;
+        h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .input-card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
             margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .input-group {
-            margin-bottom: 20px;
+            position: relative;
+            margin-bottom: 25px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-            font-size: 1.1rem;
+        .input-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #764ba2;
+            font-size: 1.2rem;
         }
 
-        input[type="url"] {
+        input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
+            padding: 18px 20px 18px 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid transparent;
+            border-radius: 15px;
             font-size: 16px;
-            margin-bottom: 15px;
-            transition: border-color 0.3s;
+            color: #333;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        input[type="url"]:focus {
+        input:focus {
             outline: none;
-            border-color: #1877f2;
+            border-color: #764ba2;
+            background: white;
+            box-shadow: 0 8px 25px rgba(118, 75, 162, 0.3);
+            transform: translateY(-2px);
         }
 
-        button {
-            background: #1877f2;
+        input::placeholder {
+            color: #999;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #166fe5;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .result-card {
-            background: white;
-            padding: 30px;
             border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .success-result {
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 25px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-left: 5px solid #28a745;
         }
 
-        .error-result {
+        .success-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .uid-display {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px dashed #28a745;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            word-break: break-all;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .error-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-left: 5px solid #dc3545;
+            color: #dc3545;
+            text-align: center;
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 30px;
+            color: white;
             display: none;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1877f2;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -152,275 +239,140 @@ HTML_TEMPLATE = '''
             100% { transform: rotate(360deg); }
         }
 
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 25px 0;
-        }
-
-        .data-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border-left: 4px solid #1877f2;
-        }
-
-        .data-card h3 {
-            color: #1877f2;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .data-item {
-            margin: 10px 0;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-        }
-
-        .data-label {
-            font-weight: bold;
-            color: #555;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .data-value {
-            color: #333;
-            word-break: break-all;
-        }
-
-        .post-content {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border-left: 4px solid #28a745;
-        }
-
-        .post-text {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-item {
-            background: #1877f2;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-        }
-
-        .uid-display {
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-            border: 2px dashed #1877f2;
-        }
-
-        .uid-value {
-            font-family: monospace;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #1877f2;
-            margin: 10px 0;
-        }
-
-        .copy-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .copy-btn:hover {
-            background: #218838;
-        }
-
-        .instructions {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
+        .examples {
             margin-top: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .instructions h3 {
-            color: #1877f2;
+        .examples h3 {
+            color: white;
             margin-bottom: 15px;
+            font-size: 1.1rem;
         }
 
-        .instructions ol {
-            margin-left: 20px;
-            margin-bottom: 20px;
+        .example-list {
+            text-align: left;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        .instructions li {
-            margin-bottom: 10px;
-            line-height: 1.5;
-        }
-
-        .note {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 8px;
-            color: #856404;
+        .example-list li {
+            margin-bottom: 8px;
+            padding-left: 10px;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 5px;
         }
 
         .footer {
-            text-align: center;
-            margin-top: 40px;
-            color: white;
-            padding: 20px;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .glass-container {
+                padding: 30px 20px;
+                margin: 10px;
             }
-            .header h1 {
-                font-size: 2rem;
+
+            h1 {
+                font-size: 1.7rem;
             }
-            .data-grid {
-                grid-template-columns: 1fr;
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            input, .btn {
+                padding: 16px 16px 16px 45px;
+            }
+
+            .uid-display {
+                font-size: 1.1rem;
+                padding: 15px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔍 Facebook Post Analyzer</h1>
-            <p>Get Real Data from Any Facebook Post</p>
+    <div class="glass-container">
+        <!-- Header -->
+        <div class="logo">
+            <i class="fab fa-facebook"></i>
+        </div>
+        <h1>Facebook UID Extractor</h1>
+        <div class="subtitle">Perfect UID Extraction for Posts URLs</div>
+
+        <!-- Input Section -->
+        <div class="input-group">
+            <i class="fas fa-link input-icon"></i>
+            <input type="url" id="postUrl" 
+                   placeholder="Paste Facebook posts URL here..." 
+                   required>
         </div>
 
-        <div class="input-card">
-            <div class="input-group">
-                <label for="postUrl">Facebook Post URL:</label>
-                <input type="url" id="postUrl" 
-                       placeholder="https://www.facebook.com/share/p/1C8EEGCHWy/?mibextid=wwXIfr" 
-                       required>
-                <button id="extractBtn" onclick="extractUID()">Analyze Post</button>
-            </div>
-        </div>
+        <button class="btn" onclick="extractUID()" id="extractBtn">
+            <i class="fas fa-magic"></i>
+            Extract UID
+        </button>
 
+        <!-- Loading -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Analyzing Facebook post...</p>
+            <p>Extracting UID...</p>
         </div>
 
-        <div class="result-card success-result" id="successResult">
-            <h2>✅ Analysis Complete</h2>
-            
-            <div class="uid-display">
-                <strong>Post ID:</strong>
-                <div class="uid-value" id="postId"></div>
-                <button class="copy-btn" onclick="copyToClipboard()">Copy ID</button>
-            </div>
-
-            <div class="data-grid">
-                <div class="data-card">
-                    <h3>👤 Author Information</h3>
-                    <div class="data-item">
-                        <span class="data-label">Posted By:</span>
-                        <span class="data-value" id="postAuthor">Loading...</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Author ID:</span>
-                        <span class="data-value" id="authorId">Loading...</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Post Time:</span>
-                        <span class="data-value" id="postTime">Loading...</span>
-                    </div>
+        <!-- Results -->
+        <div class="result-container">
+            <div class="success-card" id="successResult">
+                <div class="success-header">
+                    <i class="fas fa-check-circle"></i>
+                    <span>UID Extracted Successfully!</span>
                 </div>
+                <div class="uid-display" id="uidDisplay"></div>
+                <button class="copy-btn" onclick="copyUID()">
+                    <i class="fas fa-copy"></i>
+                    Copy UID
+                </button>
+            </div>
 
-                <div class="data-card">
-                    <h3>📊 Post Statistics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-number" id="likesCount">0</span>
-                            <span class="stat-label">Likes</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="commentsCount">0</span>
-                            <span class="stat-label">Comments</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="sharesCount">0</span>
-                            <span class="stat-label">Shares</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="viewsCount">0</span>
-                            <span class="stat-label">Views</span>
-                        </div>
-                    </div>
+            <div class="error-card" id="errorResult">
+                <div class="error-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Error</span>
                 </div>
-            </div>
-
-            <div class="post-content">
-                <h3>📝 Post Content</h3>
-                <div class="post-text" id="postContent">Loading post content...</div>
-            </div>
-
-            <div class="data-item">
-                <span class="data-label">Full Post URL:</span>
-                <a class="data-value" id="fullUrl" target="_blank">Loading...</a>
+                <p id="errorMessage"></p>
             </div>
         </div>
 
-        <div class="result-card error-result" id="errorResult">
-            <h2>❌ Analysis Failed</h2>
-            <p id="errorMessage"></p>
+        <!-- Examples -->
+        <div class="examples">
+            <h3><i class="fas fa-lightbulb"></i> Supported URL Formats</h3>
+            <ul class="example-list">
+                <li>https://www.facebook.com/61583283505209/posts/122095038687109450/</li>
+                <li>https://facebook.com/username/posts/123456789012345/</li>
+                <li>https://fb.com/pageid/posts/123456789012345/</li>
+            </ul>
         </div>
 
-        <div class="instructions">
-            <h3>How to Use:</h3>
-            <ol>
-                <li>Copy any Facebook post URL from your browser</li>
-                <li>Paste it in the input field above</li>
-                <li>Click "Analyze Post" to get real data</li>
-                <li>View author information, post content, and statistics</li>
-            </ol>
-            <div class="note">
-                <strong>Note:</strong> This tool works with public Facebook posts. For private posts or posts requiring login, data may not be accessible.
-            </div>
-        </div>
-
+        <!-- Footer -->
         <div class="footer">
-            <p>Facebook Post Analyzer &copy; 2024</p>
+            <p>Perfect UID Extraction for Posts URLs</p>
         </div>
     </div>
 
     <script>
+        // Initially hide results
+        document.getElementById('successResult').style.display = 'none';
+        document.getElementById('errorResult').style.display = 'none';
+        document.getElementById('loading').style.display = 'none';
+
         async function extractUID() {
             const postUrl = document.getElementById('postUrl').value.trim();
             const extractBtn = document.getElementById('extractBtn');
@@ -432,9 +384,8 @@ HTML_TEMPLATE = '''
             successResult.style.display = 'none';
             errorResult.style.display = 'none';
             loading.style.display = 'block';
-            
             extractBtn.disabled = true;
-            extractBtn.textContent = 'Analyzing...';
+            extractBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Extracting...';
 
             if (!postUrl) {
                 showError('Please enter a Facebook URL');
@@ -450,22 +401,22 @@ HTML_TEMPLATE = '''
                 const response = await fetch('/extract-uid', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ post_url: postUrl })
+                    body: JSON.stringify({ url: postUrl })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    showSuccess(data);
+                    showSuccess(data.uid);
                 } else {
-                    showError(data.error || 'Failed to analyze post');
+                    showError(data.error || 'Failed to extract UID');
                 }
             } catch (error) {
-                showError('Network error: ' + error.message);
+                showError('Network error: Please check your connection');
             } finally {
                 loading.style.display = 'none';
                 extractBtn.disabled = false;
-                extractBtn.textContent = 'Analyze Post';
+                extractBtn.innerHTML = '<i class="fas fa-magic"></i> Extract UID';
             }
         }
 
@@ -473,33 +424,43 @@ HTML_TEMPLATE = '''
             return url.includes('facebook.com') || url.includes('fb.com');
         }
 
-        function showSuccess(data) {
-            document.getElementById('postId').textContent = data.post_id;
-            document.getElementById('postAuthor').textContent = data.post_author;
-            document.getElementById('authorId').textContent = data.author_id;
-            document.getElementById('postTime').textContent = data.post_time;
-            document.getElementById('postContent').textContent = data.post_content;
-            document.getElementById('likesCount').textContent = data.likes_count;
-            document.getElementById('commentsCount').textContent = data.comments_count;
-            document.getElementById('sharesCount').textContent = data.shares_count;
-            document.getElementById('viewsCount').textContent = data.views_count;
-            document.getElementById('fullUrl').href = data.full_url;
-            document.getElementById('fullUrl').textContent = data.full_url;
-
+        function showSuccess(uid) {
+            document.getElementById('uidDisplay').textContent = uid;
             document.getElementById('successResult').style.display = 'block';
             document.getElementById('errorResult').style.display = 'none';
+            
+            // Smooth scroll to result
+            document.getElementById('successResult').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
         }
 
         function showError(message) {
             document.getElementById('errorMessage').textContent = message;
             document.getElementById('successResult').style.display = 'none';
             document.getElementById('errorResult').style.display = 'block';
+            
+            // Smooth scroll to error
+            document.getElementById('errorResult').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
         }
 
-        function copyToClipboard() {
-            const postId = document.getElementById('postId').textContent;
-            navigator.clipboard.writeText(postId).then(() => {
-                alert('Post ID copied to clipboard!');
+        function copyUID() {
+            const uid = document.getElementById('uidDisplay').textContent;
+            navigator.clipboard.writeText(uid).then(() => {
+                // Show temporary success
+                const copyBtn = document.querySelector('.copy-btn');
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyBtn.style.background = 'linear-gradient(135deg, #20c997, #28a745)';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                }, 2000);
             });
         }
 
@@ -509,113 +470,69 @@ HTML_TEMPLATE = '''
                 extractUID();
             }
         });
+
+        // Input focus effect
+        document.getElementById('postUrl').addEventListener('focus', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+
+        document.getElementById('postUrl').addEventListener('blur', function() {
+            this.style.transform = 'translateY(0)';
+        });
+
+        // Auto-focus on input
+        document.getElementById('postUrl').focus();
     </script>
 </body>
 </html>
 '''
 
-def extract_uid_from_url(post_url):
-    """Extract UID from Facebook URL"""
+def extract_posts_uid(url):
+    """
+    Perfect UID extraction for Facebook posts URLs
+    Format: https://www.facebook.com/61583283505209/posts/122095038687109450/?mibextid=...
+    """
     try:
-        # Simple and reliable UID extraction
-        if '/share/p/' in post_url:
-            match = re.search(r'/share/p/([^/?]+)', post_url)
-            if match:
-                return match.group(1)
+        # Clean the URL
+        url = url.strip()
         
-        if '/posts/' in post_url:
-            match = re.search(r'/posts/([^/?]+)', post_url)
-            if match:
-                return match.group(1)
-        
-        # For other URL formats
-        patterns = [
-            r'facebook\.com/([^/?]+)/posts/([^/?]+)',
-            r'story_fbid=([^&]+)',
-            r'/(\d+)(?:\?|$)'
+        # Method 1: Direct posts pattern extraction
+        posts_patterns = [
+            r'facebook\.com/\d+/posts/(\d+)',
+            r'fb\.com/\d+/posts/(\d+)',
+            r'/posts/(\d+)',
+            r'facebook\.com/[^/]+/posts/(\d+)'
         ]
         
-        for pattern in patterns:
-            match = re.search(pattern, post_url)
+        for pattern in posts_patterns:
+            match = re.search(pattern, url)
             if match:
-                return match.group(1) if match.lastindex == 1 else match.group(2)
+                uid = match.group(1)
+                # Validate it's a proper Facebook ID (numeric and reasonably long)
+                if uid.isdigit() and len(uid) >= 15:
+                    return uid
+        
+        # Method 2: URL path parsing
+        parsed_url = urllib.parse.urlparse(url)
+        path_parts = parsed_url.path.split('/')
+        
+        # Look for pattern: /number/posts/number/
+        for i, part in enumerate(path_parts):
+            if part == 'posts' and i + 1 < len(path_parts):
+                uid = path_parts[i + 1]
+                if uid.isdigit() and len(uid) >= 15:
+                    return uid
+        
+        # Method 3: Last numeric part in path (fallback)
+        for part in reversed(path_parts):
+            if part.isdigit() and len(part) >= 15:
+                return part
         
         return None
-    except:
-        return None
-
-def get_facebook_post_data(post_url):
-    """
-    Get REAL Facebook post data using multiple methods
-    """
-    try:
-        print(f"🔍 Analyzing: {post_url}")
-        
-        # Extract UID first
-        post_id = extract_uid_from_url(post_url)
-        if not post_id:
-            return None, "Could not extract Post ID from URL"
-        
-        # Method 1: Try to get basic info from URL patterns
-        basic_info = {
-            'post_id': post_id,
-            'full_url': f"https://facebook.com/{post_id}",
-            'post_author': 'Facebook User',
-            'author_id': '100000000000000',  # Default author ID
-            'post_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'post_content': 'This is a Facebook post. Content extraction requires advanced access.',
-            'likes_count': '50+',
-            'comments_count': '10+', 
-            'shares_count': '5+',
-            'views_count': '100+'
-        }
-        
-        # Method 2: Try to fetch actual page data (for public posts)
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            
-            response = requests.get(post_url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                html_content = response.text
-                
-                # Try to extract actual content
-                content_patterns = [
-                    r'"message":"([^"]+)"',
-                    r'"text":"([^"]+)"',
-                    r'<meta[^>]*property="og:description"[^>]*content="([^"]+)"'
-                ]
-                
-                for pattern in content_patterns:
-                    match = re.search(pattern, html_content)
-                    if match:
-                        content = match.group(1).replace('\\n', '\n').replace('\\"', '"')
-                        if len(content) > 20:
-                            basic_info['post_content'] = content
-                            break
-                
-                # Try to extract author info
-                author_patterns = [
-                    r'"actor":"([^"]+)"',
-                    r'"name":"([^"]+)"',
-                    r'<meta[^>]*property="og:title"[^>]*content="([^"]+)"'
-                ]
-                
-                for pattern in author_patterns:
-                    match = re.search(pattern, html_content)
-                    if match:
-                        author = match.group(1)
-                        if 'Facebook' not in author and len(author) > 3:
-                            basic_info['post_author'] = author
-                            break
-        except:
-            pass  # Continue with basic info if fetching fails
-        
-        return basic_info, "Success"
         
     except Exception as e:
-        return None, f"Error: {str(e)}"
+        print(f"Error extracting UID: {e}")
+        return None
 
 @app.route('/')
 def home():
@@ -625,42 +542,38 @@ def home():
 def extract_uid():
     try:
         data = request.get_json()
-        post_url = data.get('post_url', '').strip()
+        url = data.get('url', '').strip()
 
-        if not post_url:
-            return jsonify({'success': False, 'error': 'Post URL is required'}), 400
+        if not url:
+            return jsonify({'success': False, 'error': 'URL is required'})
 
-        # Get post data
-        post_data, message = get_facebook_post_data(post_url)
+        # Extract UID using specialized posts function
+        uid = extract_posts_uid(url)
 
-        if post_data:
+        if uid:
             return jsonify({
                 'success': True,
-                'post_id': post_data['post_id'],
-                'full_url': post_data['full_url'],
-                'post_author': post_data['post_author'],
-                'author_id': post_data['author_id'],
-                'post_time': post_data['post_time'],
-                'post_content': post_data['post_content'],
-                'likes_count': post_data['likes_count'],
-                'comments_count': post_data['comments_count'],
-                'shares_count': post_data['shares_count'],
-                'views_count': post_data['views_count'],
-                'message': 'Post analysis completed successfully'
+                'uid': uid,
+                'message': 'UID extracted successfully from posts URL'
             })
         else:
             return jsonify({
                 'success': False,
-                'error': message
-            }), 404
+                'error': 'Could not extract UID. Please make sure this is a valid Facebook posts URL in the format: https://www.facebook.com/PAGE_ID/posts/POST_ID/'
+            })
             
     except Exception as e:
         return jsonify({
             'success': False,
             'error': f'Server error: {str(e)}'
-        }), 500
+        })
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy', 'service': 'Facebook UID Extractor'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 Server running on port {port}")
+    print(f"🚀 Facebook UID Extractor starting on port {port}")
+    print(f"📱 Specialized for posts URLs: /PAGE_ID/posts/POST_ID/")
     app.run(host='0.0.0.0', port=port, debug=False)
