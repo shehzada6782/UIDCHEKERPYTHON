@@ -473,8 +473,8 @@ HTML_TEMPLATE = '''
     <div class="neon-container">
         <!-- Header -->
         <div class="header">
-            <h1 class="neon-title">AAHAN POST UID CHECKER</h1>
-            <div class="subtitle">PREMIUM FACEBOOK POST ID EXTRACTOR</div>
+            <h1 class="neon-title">AAHAN POST UID FINDER</h1>
+            <div class="subtitle">FACEBOOK POST UID FINDER</div>
         </div>
 
         <!-- Input Section -->
@@ -488,7 +488,7 @@ HTML_TEMPLATE = '''
 
             <button class="neon-btn" onclick="extractUID()" id="extractBtn">
                 <i class="fas fa-bolt"></i>
-                EXTRACT UID
+                SUBMIT
             </button>
         </div>
 
@@ -523,7 +523,7 @@ HTML_TEMPLATE = '''
 
         <!-- Footer -->
         <div class="footer">
-            <p>POWERED BY AAHAN TECHNOLOGIES | NEON EDITION</p>
+            <p>POWERED BY AAHAN DEVELOPER | NEON EDITION</p>
         </div>
     </div>
 
